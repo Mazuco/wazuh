@@ -12,7 +12,6 @@ import sys
 from pathlib import Path
 from cryptography.fernet import Fernet
 
-
 def create_random_files(basedir, n_directories, n_files_per_directory, size_file=1024):
 
     for root, dirs, files in os.walk(str(basedir)):
@@ -101,7 +100,7 @@ if __name__ == '__main__':
         print("Error: Bad arguments. Valid arguments: 'prepare', 'attack', 'restore'")
         sys.exit(1)
 
-    basedir = "/home/vagrant/test"
+    basedir = "C:\\Users\\Administrator\\Documents\\teste"
     key = "nso42FGdswR0805tnVqeww0u3Rubwk2a"
 
     if action == "prepare":
