@@ -1,0 +1,274 @@
+<group name="malware,ransomware,ransomware_pre_detection">
+<!-- Rules to detect Ransomware attack -->
+
+ <!-- Suspicious command execution -->
+ <rule id="100600" level="12">
+    <if_sid>61603</if_sid>
+    <field name="win.eventdata.parentCommandLine" type="pcre2">(?i)[c-z]:\\\\Windows\\\\System32\\\\svchost\.exe\s-k\sWerSvcGroup</field>
+    <field name="win.eventdata.commandLine" type="pcre2">(?i)[c-z]:\\\\Windows\\\\system32\\\\WerFault\.exe\s-pss\s-s\s\d+\s-p\s\d+\s-ip\s\d+</field>
+    <description>Possible WerFault DLL Sideloading $(win.eventdata.commandLine).</description>
+    <mitre>
+      <id>T1546.008</id>
+    </mitre>
+ </rule>
+
+ <rule id="100601" level="10" >
+    <if_sid>61603</if_sid>
+    <field name="win.eventdata.parent.image.path" type="pcre2">(?i)regedit.exe</field>
+    <field name="win.eventdata.commandLine" type="pcre2">(?i)schtasks.exe \/create.*\\cmd.exe.*start wordpad.exe.*.dll</field>
+    <description>Suspicious scheduled task created.</description>
+    <mitre>
+      <id>T1546.008</id>
+    </mitre>
+ </rule>
+
+ <rule id="100602" level="7">
+   <if_sid>92027</if_sid>
+   <field name="win.eventdata.CommandLine" type="pcre2">Install-WindowsFeature.*RSAT-ADPowerShell</field>
+   <description>Remote Server Administration Tools installed.</description>
+   <mitre>
+     <id>T1562</id>
+   </mitre>
+  </rule>
+
+<!-- Impair defenses -->
+  <rule id="100603" level="10">
+    <if_sid>92042</if_sid>
+    <field name="win.eventdata.CommandLine" type="pcre2">netsh advfirewall set currentprofile state off</field>
+    <description>Windows firewall disabled.</description>
+    <mitre>
+      <id>T1562</id>
+    </mitre>
+  </rule>
+  
+  <rule id="100604" level="10">
+    <if_sid>61614</if_sid>
+    <field name="win.eventdata.targetObject" type="pcre2" >HKLM\\\\System\\\\CurrentControlSet\\\\Services\\\\WinDefend</field>
+    <field name="win.eventdata.eventType" type="pcre2">^DeleteKey$</field>
+    <field name="win.eventdata.user" type="pcre2" >NT AUTHORITY\\\\SYSTEM</field>
+    <description>Windows defender service $(win.eventdata.user) has been deleted on $(win.system.computer). Possible malicious activity.</description>
+    <mitre>
+      <id>T1562.001</id>
+    </mitre>
+  </rule>
+  
+  <rule id="100605" level="10">
+    <if_sid>92027,92021</if_sid>
+    <field name="win.eventdata.CommandLine" type="pcre2">(?i)powershell.*New-ItemProperty.*Windows Defender.*DisableAntiSpyware.*-Value 1.*</field>
+    <description>Windows defender service has been deleted on $(win.system.computer). Possible malicious activity.</description>
+    <mitre>
+      <id>T1562.001</id>
+    </mitre>
+  </rule>
+ 
+  <rule id="100606" level="10">
+    <if_sid>92008,92027</if_sid>
+    <field name="win.eventdata.CommandLine" type="pcre2">(?i)powershell.*Set-MpPreference.*-DisableRealTimeMonitoring.*true</field>
+    <description>Windows defender realtime protection has been disabled on $(win.system.computer). Possible malicious activity.</description>
+    <mitre>
+      <id>T1562.001</id>
+    </mitre>
+  </rule>
+
+  <rule id="100607" level="10">
+    <if_sid>92042</if_sid>
+    <field name="win.eventdata.CommandLine" type="pcre2">reg.exe .*Windows Defender\\Real-Time Protection.*Disable|\/d</field>
+    <description>Windows defender realtime protection has been disabled on $(win.system.computer). Possible malicious activity.</description>
+    <mitre>
+      <id>T1562</id>
+    </mitre>
+  </rule>
+
+  <rule id="100608" level="10">
+    <if_sid>92042</if_sid>
+    <field name="win.eventdata.ruleName" type="pcre2">(?i)Disabling Security Tools</field>
+    <field name="win.eventdata.targetObject" type="pcre2">(?i)Windows Defender</field>
+    <description>Windows Defender feature disabled on $(win.system.computer). Possible malicious activity</description>
+    <mitre>
+      <id>T1562</id>
+    </mitre>
+  </rule>
+
+  <rule id="100609" level="10">
+    <if_sid>92042</if_sid>
+    <field name="win.eventdata.CommandLine" type="pcre2">dism .* \/Disable-feature \/FeatureName:Windows-Defender</field>
+    <description>Windows Defender disabled.</description>
+    <mitre>
+      <id>T1562</id>
+    </mitre>
+  </rule>
+
+  <rule id="100610" level="10">
+    <field name="win.system.providerName" type="pcre2">(?i)SecurityCenter</field>    
+    <field name="win.eventdata.data" type="pcre2">(?i)Windows Defender, SECURITY_PRODUCT_STATE_SNOOZED</field>    
+    <description>Windows Defender snoozed on $(win.system.computer). Possible malicious activity</description>
+    <mitre>
+      <id>T1562</id>
+    </mitre>
+  </rule>
+
+<!-- System recovery inhibition -->  
+  <rule id="100611" level="10">
+    <if_sid>61603</if_sid>
+    <field name="win.eventdata.CommandLine" type="pcre2">(?i)bcdedit\s\s\/set\s{default}\sbootstatuspolicy\signoreallfailures</field>
+    <description>Boot configuration data edited.</description>
+    <mitre>
+      <id>T1059</id>
+    </mitre>
+  </rule>
+
+
+<!-- Persistence detection --> 
+  <rule id="100612" level="10">
+    <if_sid>92300</if_sid>
+    <field name="win.eventdata.image" type="pcre2">(?i)\.exe</field>
+    <field name="win.eventdata.eventType" type="pcre2">(?i)SetValue</field>
+    <field name="win.eventdata.targetObject" type="pcre2">(?i)HKLM\\\\SOFTWARE\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Run\\\\[A-Za-z0-9]+</field>
+    <description>New run key added to registry by $(win.eventdata.image).</description>
+    <mitre>
+      <id>T1547.001</id>
+    </mitre>
+  </rule>
+    
+ 
+ <rule id="100613" level="10">
+    <if_sid>61613</if_sid>
+    <field name="win.eventdata.image" type="pcre2">\.exe</field>
+    <field name="win.eventdata.targetFilename" type="pcre2">(?i)ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\\\\Startup\\\\.+\.exe</field>
+    <description>$(win.eventdata.targetFilename) added to Startup programs by $(win.eventdata.image).</description>
+    <mitre>
+      <id>T1547.001</id>
+    </mitre>
+  </rule>
+  
+  <rule id="100614" level="10">
+    <field name="win.eventdata.ruleName" type="pcre2">(?i)Credential Dumping</field>
+    <field name="win.eventdata.sourceImage" type="pcre2">WerFault.exe</field>
+    <description>WerFault abused to dump credentials.</description>
+    <mitre>
+      <id>T1003</id>
+    </mitre>
+  </rule>
+  
+<!-- System recovery inhibition -->
+  <rule id="100615" level="12">
+    <if_sid>61603</if_sid>
+    <field name="win.eventdata.CommandLine" type="pcre2">(?i)vssadmin\s\sdelete\sshadows\s\/all\s\/quiet</field>
+    <description>Volume shadow copy deleted using $(win.eventdata.originalFileName). Potential ransomware activity detected.</description>
+    <mitre>
+      <id>T1490</id>
+      <id>T1059.003</id>
+    </mitre>
+  </rule>
+  
+  <rule id="100616" level="12">
+    <if_sid>92032</if_sid>
+    <field name="win.eventdata.parentCommandLine" type="pcre2">(?i)vssadmin.*delete.*shadow</field>
+    <description>Volume shadow copy deleted using $(win.eventdata.originalFileName). Potential ransomware activity detected.</description>
+    <mitre>
+      <id>T1490</id>
+      <id>T1059.003</id>
+    </mitre>
+  </rule>
+  
+  <rule id="100617" level="12">
+    <if_sid>61603</if_sid>
+    <field name="win.eventdata.CommandLine" type="pcre2">(?i).*Shadowcopy .*Delete</field>
+    <description>Volume shadow copy deleted using $(win.eventdata.originalFileName). Potential ransomware activity detected.</description>
+    <mitre>
+      <id>T1490</id>
+      <id>T1059.003</id>
+    </mitre>
+  </rule>
+
+  <rule id="100618" level="12">
+    <if_sid>61603</if_sid>
+    <field name="win.eventdata.CommandLine" type="pcre2">wmic shadowcopy delete</field>
+    <description>$(win.eventdata.originalFileName) invoked to delete shadow copies. Potential ransomware activity detected.</description>
+    <mitre>
+      <id>T1490</id>
+      <id>T1059.003</id>
+    </mitre>
+  </rule>
+
+  <rule id="100619" level="12">
+    <field name="win.system.providerName" type="pcre2">(?i)Microsoft-Windows-Sysmon</field>
+    <field name="win.eventdata.CommandLine" type="pcre2">(?i)delete shadows</field>
+    <description>Volume Shadow copy deleted on $(win.system.computer). Potential ransomware activity detected.</description>
+    <mitre>
+      <id>T1490</id>
+      <id>T1059.003</id>
+    </mitre>
+  </rule>
+
+  <rule id="100620" level="12">
+    <if_sid>61603</if_sid>
+    <field name="win.eventdata.CommandLine" type="pcre2">(?i)bcdedit\s\s\/set\s{default}\srecoveryenabled\sNo</field>
+    <description>System recovery disabled. Possible ransomware activity detected.</description>
+    <mitre>
+      <id>T1059</id>
+    </mitre>
+  </rule>
+
+  <rule id="100621" level="12">
+    <if_sid>61603</if_sid>
+    <field name="win.eventdata.CommandLine" type="pcre2">(?i)wbadmin\s\sdelete\scatalog\s-quiet</field>
+    <description>System catalog deleted. Possible ransomware activity detected.</description>
+    <mitre>
+      <id>T1059</id>
+    </mitre>
+  </rule>
+  
+  <rule id="100622" level="12">
+    <if_sid>61603</if_sid>
+    <field name="win.eventdata.CommandLine" type="pcre2">(?i)bcdedit\s\s\/set\s{default}\srecoveryenabled\sNo</field>
+    <description>System recovery disabled. Possible ransomware activity detected.</description>
+    <mitre>
+      <id>T1059</id>
+    </mitre>
+  </rule>
+  
+  <rule id="100623" level="12">
+    <if_sid>92032</if_sid>
+    <field name="win.eventdata.CommandLine" type="pcre2">(?i)wevtutil.*cl</field>
+    <description>Windows event logs deleted. Possible malicious activity detected.</description>
+    <mitre>
+      <id>T1070.001</id>
+    </mitre>
+  </rule>
+
+<!-- Ransom note file creation -->
+
+  
+  <rule id="100626" level="10" timeframe="50" frequency="3" ignore="300">
+    <if_matched_sid>554</if_matched_sid>
+    <same_field>md5</same_field>
+    <different_field>file</different_field>
+    <description>The file $(file) has been created in multiple directories in a short time. Possible ransomware activity.</description>
+  </rule>
+  
+  <rule id="100627" level="7" timeframe="30" frequency="10" ignore="300">
+    <if_matched_sid>550</if_matched_sid>
+    <field name="file" type="pcre2">(?i)C:\\Users</field>
+    <description>Multiple Files modified in the User directory in a short time.</description>
+  </rule>
+
+  <rule id="100629" level="7" timeframe="300" frequency="2" ignore="300">
+    <if_matched_sid>63104</if_matched_sid>
+    <field name="win.system.message" type="pcre2">(?i)log file was cleared</field>
+    <description>Windows Log File Cleared.</description>
+    <mitre>
+      <id>T1070.001</id>
+    </mitre>
+
+  </rule>
+
+</group>
+
+<group name="ransomware,ransomware_detection">
+  <rule id="100628" level="12" timeframe="300" frequency="2" ignore="300">
+    <if_matched_group>ransomware_pre_detection</if_matched_group>
+    <if_sid>100626,100627,100615,100616,100617,100618,100619</if_sid>
+    <description>Ransomware activity detected.</description>
+  </rule>
+</group>
