@@ -1,0 +1,77 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+    - uuid: a571c0d144b14fd4a87a9d9b2aa9fcd6
+      name: Templates/Applications
+  templates:
+    - uuid: 143ff204dad44eb38d898fdf6d2e8dcb
+      template: Wazuh
+      name: Wazuh
+      description: 'Template for Monitoring OSSEC or Wazuh (fork of OSSEC) Intrusion Detection system.'
+      groups:
+        - name: Templates/Applications
+      items:
+        - uuid: d7b5f19fa2d74a29a94aaf84e78b5f9c
+          name: 'Manager Port Listening'
+          key: ossecwazuh.port.listening
+          delay: 30s
+          history: 90d
+          value_type: CHAR
+          trends: '0'
+          description: 'Status of TCP port 1514 on the OSSEC-Wazuh Server.  Is it listening or not.'
+          tags:
+            - tag: Application
+              value: OSSEC-Wazuh
+          triggers:
+            - uuid: db07503d7c34454aa918e0f36960fc14
+              expression: 'find(/Wazuh/ossecwazuh.port.listening,#1,"like","Not Listening")=1'
+              recovery_mode: RECOVERY_EXPRESSION
+              recovery_expression: 'find(/Wazuh/ossecwazuh.port.listening,#1,"like","Wazuh Listening")=1'
+              name: 'OSSEC-Wazuh Not Listening'
+              priority: DISASTER
+              description: 'UDP Port 1514 Not listening on Wazuh-OSSEC server.'
+              manual_close: 'YES'
+      discovery_rules:
+        - uuid: aca6ba7070f346e78f6f13eb70b98d29
+          name: 'OSSEC-Wazuh Agent Discovery'
+          key: 'ossecwazuh.manager[discovery,agent]'
+          delay: '3600'
+          lifetime_type: DELETE_IMMEDIATELY
+          lifetime: '0'
+          description: 'Discovery to enumerate the agents connected to a Wazuh-Ossec Manager Server.'
+          item_prototypes:
+            - uuid: 6090f9b73d1e4eaebac05dcaa2f7ac90
+              name: 'OSSEC-Wazuh Agent "{#NAME}" status'
+              key: 'ossecwazuh.agents[{#NAME}]'
+              delay: 30s
+              history: 90d
+              value_type: CHAR
+              trends: '0'
+              description: 'What is the status of the Agent, Active, Disconnected, or Never connected.'
+              valuemap:
+                name: 'OSSEC-Wazuh Agent Status'
+              tags:
+                - tag: Application
+                  value: OSSEC-Wazuh
+              trigger_prototypes:
+                - uuid: f6ff723e29974b4d88d3a20e28eda880
+                  expression: 'find(/Wazuh/ossecwazuh.agents[{#NAME}],,"like","Disconnected")=1'
+                  name: 'OSSEC-Wazuh Agent {#NAME} Disconnected'
+                  priority: HIGH
+                  description: '{#NAME} is Disconnected'
+                  manual_close: 'YES'
+                - uuid: 4b718a1d95d848ab9c3853171129deb0
+                  expression: 'find(/Wazuh/ossecwazuh.agents[{#NAME}],,"regexp","^Never.*")=1'
+                  name: 'OSSEC-Wazuh Agent {#NAME} never connected'
+                  priority: WARNING
+                  description: '{#NAME} agent has never connected to OSSEC/Wazuh'
+      valuemaps:
+        - uuid: 5ff4727a950f4bedb012b63d89845957
+          name: 'OSSEC-Wazuh Agent Status'
+          mappings:
+            - value: Active
+              newvalue: '0'
+            - value: Disconnected
+              newvalue: '1'
+            - value: 'Never connected'
+              newvalue: '2'
