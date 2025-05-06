@@ -1,1 +1,1 @@
-Arquivos e scripts do curso de Wazuh
+Wazuh Course Files and Scripts
