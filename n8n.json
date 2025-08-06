@@ -1,0 +1,114 @@
+{
+  "nodes": [
+    {
+      "id": "webhook-wazuh",
+      "name": "Webhook - Wazuh",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "wazuh-alerts",
+        "responseMode": "onReceived"
+      }
+    },
+    {
+      "id": "extract-hash",
+      "name": "Extract Hash",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [500, 300],
+      "parameters": {
+        "fields": {
+          "hash": "={{ $json.alert?.data?.virustotal?.hashes?.sha256 || $json.alert?.data?.virustotal?.hashes?.sha1 || $json.alert?.data?.virustotal?.hashes?.md5 }}"
+        }
+      }
+    },
+    {
+      "id": "virustotal-query",
+      "name": "Check VirusTotal",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [750, 300],
+      "parameters": {
+        "authentication": "headerAuth",
+        "requestMethod": "GET",
+        "url": "https://www.virustotal.com/api/v3/files/{{$json.hash}}",
+        "headerParametersUi": {
+          "headerParameters": [
+            {
+              "name": "x-apikey",
+              "value": "SUA_CHAVE_DO_VIRUSTOTAL"
+            }
+          ]
+        },
+        "responseFormat": "json"
+      }
+    },
+    {
+      "id": "if-malicious",
+      "name": "Malicioso?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1000, 300],
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.data.attributes.last_analysis_stats.malicious }}",
+              "operation": "larger",
+              "value2": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "create-ticket-zammad",
+      "name": "Criar Ticket Zammad",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [1250, 300],
+      "parameters": {
+        "authentication": "basicAuth",
+        "requestMethod": "POST",
+        "url": "http://SEU_ZAMMAD/api/v1/tickets",
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": "={\n  \"title\": \"Arquivo malicioso detectado\",\n  \"group\": \"Users\",\n  \"customer_id\": \"analista@empresa.com\",\n  \"article\": {\n    \"subject\": \"Wazuh detectou arquivo suspeito\",\n    \"body\": \"O arquivo com hash {{$json.data.id}} foi detectado com {{$json.data.attributes.last_analysis_stats.malicious}} mecanismos marcando como malicioso.\",\n    \"type\": \"note\",\n    \"internal\": false\n  }\n}"
+      }
+    }
+  ],
+  "connections": {
+    "Webhook - Wazuh": {
+      "main": [["Extract Hash"]]
+    },
+    "Extract Hash": {
+      "main": [["Check VirusTotal"]]
+    },
+    "Check VirusTotal": {
+      "main": [["Malicioso?"]]
+    },
+    "Malicioso?": {
+      "main": [
+        ["Criar Ticket Zammad"],
+        null
+      ]
+    }
+  },
+  "credentials": {
+    "basicAuth": {
+      "id": "zammad-basic-auth",
+      "name": "Zammad API Auth"
+    },
+    "headerAuth": {
+      "id": "virustotal-token",
+      "name": "VirusTotal API Token"
+    }
+  },
+  "active": false,
+  "settings": {},
+  "name": "Wazuh ➜ VT ➜ Zammad",
+  "tags": ["wazuh", "virustotal", "zammad"]
+}
+
