@@ -20,8 +20,16 @@ import sys
 from fastapi import Depends, status, HTTPException
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 import secrets
+from contextlib import asynccontextmanager
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("🚀 Starting FastAPI app and loading vector store...")
+    setup_chain(past_days=days_range)
+    yield
+    print("🛑 Shutting down FastAPI app...")
+
+app = FastAPI(lifespan=lifespan)
 security = HTTPBasic()
 
 class Prompt(BaseModel):
@@ -30,10 +38,10 @@ class Prompt(BaseModel):
 # ===== Globals for caching =====
 qa_chain = None
 context = None
-days_range = 7
+days_range = 2
 
-username="<USERNAME>"
-password="<PASSWORD>"
+username="admin"
+password="admin"
 ssh_username = "<SSH_USERNAME>"
 ssh_password = "<SSH_PASSWORD>"
 remote_host = None
@@ -445,12 +453,6 @@ HTML_PAGE = """
 @app.get("/", response_class=HTMLResponse)
 async def get(username: str = Depends(authenticate)):
     return HTML_PAGE
-
-
-@app.on_event("startup")
-def on_startup():
-    print("🚀 Starting FastAPI app and loading vector store...")
-    setup_chain(past_days=days_range)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
