@@ -1,8 +1,8 @@
 # collect_firefox_history.ps1
-$SqliteExe = 'C:\ProgramData\Wazuh\tools\sqlite3.exe'
+$SqliteExe = 'C:\Program Files (x86)\ossec-agent\tools\sqlite3.exe'
 $RootUsers = 'C:\Users'
-$LogDir = 'C:\ProgramData\Wazuh\browser_history\logs'
-$StateDir = 'C:\ProgramData\Wazuh\browser_history\state'
+$LogDir = 'C:\Program Files (x86)\ossec-agent\browser_history\logs'
+$StateDir = 'C:\Program Files (x86)\ossec-agent\browser_history\state'
 New-Item -Path $LogDir -ItemType Directory -Force | Out-Null
 New-Item -Path $StateDir -ItemType Directory -Force | Out-Null
 
