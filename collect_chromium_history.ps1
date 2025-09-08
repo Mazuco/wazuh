@@ -73,7 +73,14 @@ foreach ($user in Get-ChildItem -Path $RootUsers -Directory | Where-Object { $_.
                 }
                 $json = ($entry | ConvertTo-Json -Depth 4)
                 $json = $json -replace "(`r|`n)"," "   # single-line JSON
-                Add-Content -Path $LogFile -Value $json
+                # Cria um arquivo temporário
+                $TempFile = "$LogFile.tmp"
+
+                # Adiciona o JSON ao arquivo temporário de forma segura
+                Add-Content -Path $TempFile -Value $json
+
+                # Move/renomeia para o arquivo final de forma atômica
+                Move-Item -Path $TempFile -Destination $LogFile -Force
                 # update LAST_PROCESSED progressively
                 $LAST_PROCESSED = $cols[0]
             }
