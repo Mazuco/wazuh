@@ -1,0 +1,38 @@
+apiVersion: audit.k8s.io/v1
+kind: Policy
+rules:
+    - level: None
+      nonResourceURLs:
+          - '/healthz*'
+          - '/logs'
+          - '/metrics'
+          - '/swagger*'
+          - '/version'
+
+    - level: Metadata
+      omitStages:
+          - RequestReceived
+      resources:
+          - group: authentication.k8s.io
+            resources:
+                - tokenreviews
+
+    - level: RequestResponse
+      omitStages:
+          - RequestReceived
+      resources:
+          - group: authorization.k8s.io
+            resources:
+                - subjectaccessreviews
+
+    - level: RequestResponse
+      omitStages:
+          - RequestReceived
+      resources:
+          - group: ''
+            resources: ['pods']
+            verbs: ['create', 'patch', 'update', 'delete']
+
+    - level: Metadata
+      omitStages:
+          - RequestReceived
