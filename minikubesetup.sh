@@ -34,6 +34,3 @@ rm -f crictl-$VERSION-linux-amd64.tar.gz
 wget https://github.com/Mirantis/cri-dockerd/releases/download/v0.2.6/cri-dockerd-0.2.6-3.el8.x86_64.rpm
 rpm -i cri-dockerd-0.2.6-3.el8.x86_64.rpm 
 rm cri-dockerd-0.2.6-3.el8.x86_64.rpm
-
-# Start Minikube
-minikube start --driver=none
