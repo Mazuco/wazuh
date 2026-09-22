@@ -222,6 +222,10 @@ chage --mindays 1 --maxdays 90 --warndays 7 --inactive 45 root
 ############################################
 # 35723 auditd installed
 apt-get install -y auditd audispd-plugins
+
+# Disables priority boosting to avoid the "Operation not permitted" error.
+sed -i 's/^priority_boost\s*=.*/priority_boost = 0/' /etc/audit/auditd.conf
+
 systemctl enable auditd --now
 
 echo "$(date '+%Y-%m-%d %H:%M:%S') Hardening complete." >> /var/ossec/logs/ossec.log
